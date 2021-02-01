@@ -47,7 +47,7 @@ def _get_argument_parser():
     # Handling action options:
     action = parser.add_mutually_exclusive_group()
     action.add_argument("--unixize","-u",
-                    help="Make compatibility changes to text files",
+                    help="Make compatibility changes to text files.",
                     action="store_true")
     action.add_argument("--decode","-d",
                     help="Return the BOM of a file or all files in a directory.",
@@ -61,6 +61,9 @@ def _get_argument_parser():
                     type=str.lower,
                     choices=["lf", "crlf", "linux", "windows"],
                     default="lf")
+    parser.add_argument("--recursive","-R",
+                    help="Apply changes to subdirectories.",
+                    action="store_true")
     # Positional arguments
     parser.add_argument("paths",
                     nargs="*",
@@ -197,17 +200,25 @@ def main(args):
                           line_end=line_ending,
                           verbose=verbose)
         elif os.path.isdir(path):
-            for directory, _ , files in os.walk(path):
-                if verbose >= 1:
-                    print("Checking %s/..." % directory)
-                for file in files:
-                    path = os.path.join(directory,file)
-                    if os.path.isfile(path):
-                        _file_unixize(path,
+            if args.recursive:
+                for directory, _ , files in os.walk(path):
+                    if verbose >= 1:
+                        print("Checking %s/..." % directory)
+                    for in_file in files:
+                        file_path = os.path.join(directory,in_file)
+                        if os.path.isfile(file_path):
+                            _file_unixize(file_path,
+                                          line_end=line_ending,
+                                          verbose=verbose,
+                                          action=action)
+            else:
+                for in_file in os.listdir(path):
+                    file_path = os.path.join(path,in_file)
+                    if os.path.isfile(file_path):
+                        _file_unixize(file_path,
                                       line_end=line_ending,
                                       verbose=verbose,
                                       action=action)
-
 
 
 if __name__ == "__main__":
