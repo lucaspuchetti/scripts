@@ -1,0 +1,57 @@
+#! /bin/bash
+echo "Executing post-receive hook..."
+
+read oldrev newrev refname
+
+# Configuración
+TZ=Europe/Madrid
+
+serverpath=/home/lucashp/repos/hook_testing/supersecureserver
+
+project_name=myproject
+
+
+# Variables del push
+#tsp=$(date +%Y-%m-%d-%H%M%S)
+tsp=$(date +%Y-%m-%d)
+sha=$(git rev-parse --short --verify $refname)
+branch=${refname#refs/heads/}
+
+# Variables de archivo
+current_dir=$(basename $(pwd))
+parent_dir=$(cd .. && pwd -P)
+archive_file=${project_name}_${branch}_${tsp}.tar.gz
+backup_file=backup_${project_name}_${tsp}.tar.gz
+
+# Generamos una copia del repositorio remoto
+
+echo "Generando copia de seguridad ${backup_file}"
+
+# Opción 1:
+
+(cd "${parent_dir}" && tar czf "${backup_file}" "${current_dir}")
+mv "${parent_dir}/${backup_file}" ./
+
+# Opción 2
+
+#tar czf "${backup_file}" ./* "s,^,${project_name}/,"
+
+# Generamos una copia foto del repositorio
+echo "Generando archivo ${archive_file}"
+
+git archive ${branch} \
+    --prefix="${project_name}/" \
+    --format='tar.gz' \
+    --output="${archive_file}"
+
+
+# Comienzo del complejo proceso de subida
+
+cp "${backup_file}" "${archive_file}" ${serverpath}
+
+# Fin del complejo proceso de subida
+
+# Cleaning
+
+rm "${backup_file}" "${archive_file}"
+
